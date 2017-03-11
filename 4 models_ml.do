@@ -39,16 +39,18 @@ ml model lf mylogit (grad = SF SM MALE FAITHN EARNINGS)
 ml maximize
 
 **Tobit Model**
-tobit grad SM, ll
+gen EXPSQ = EXP^2
+gen LOGEARNINGS = log(EARNINGS)
 
 capture program drop mytobit1
 program mytobit1
 	args lnf theta1 sigma
-	quietly replace `lnf'= ln(1-normal(`theta1'/`sigma')) if $ML_y1==0
+	quietly replace `lnf'= ln(1-normal(`theta1'/`sigma')) if $ML_y1==ln(2.5)
 	quietly replace `lnf'= ///
-	ln((1/`sigma')*normalden($ML_y1 , `theta1', `sigma') if $ML_y1>0
+	ln((1/`sigma')*normalden($ML_y1 , `theta1', `sigma')) if $ML_y1>ln(2.5)
 end
 
-ml model lf mytobit1 (grad = SF) /sigma
-ml check
+ml model lf mytobit1 (LOGEARNINGS = S EXP EXPSQ) /sigma
 ml maximize, nolog
+
+tobit LOGEARNINGS S EXP EXPSQ, ll
